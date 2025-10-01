@@ -1,0 +1,22 @@
+# Backend
+backend/target/
+backend/.mvn/
+backend/HELP.md
+backend/*.log
+
+# Frontend
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# System files
+.DS_Store
