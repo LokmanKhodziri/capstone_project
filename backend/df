@@ -1,0 +1,868 @@
+[1mdiff --git a/pom.xml b/pom.xml[m
+[1mindex d50bff4..1015a60 100644[m
+[1m--- a/pom.xml[m
+[1m+++ b/pom.xml[m
+[36m@@ -43,25 +43,11 @@[m
+ 			<artifactId>spring-boot-starter-test</artifactId>[m
+ 			<scope>test</scope>[m
+ 		</dependency>[m
+[31m-<<<<<<< HEAD[m
+[31m-		<dependency> <!-- JPA, Web, Security, JWT -->[m
+[31m-        <groupId>org.springframework.boot</groupId>[m
+[31m-        <artifactId>spring-boot-starter-web</artifactId>[m
+[31m-    </dependency>[m
+[31m-    <dependency>[m
+[31m-        <groupId>org.springframework.boot</groupId>[m
+[31m-        <artifactId>spring-boot-starter-data-jpa</artifactId>[m
+[31m-    </dependency>[m
+     [m
+     <dependency>[m
+         <groupId>com.h2database</groupId>[m
+         <artifactId>h2</artifactId>[m
+     </dependency>[m
+[31m-    <dependency>[m
+[31m-        <groupId>org.springframework.boot</groupId>[m
+[31m-        <artifactId>spring-boot-starter-test</artifactId>[m
+[31m-        <scope>test</scope>[m
+[31m-    </dependency>[m
+     <!-- JWT dependencies -->[m
+ 	<dependency>[m
+ 	    <groupId>io.jsonwebtoken</groupId>[m
+[36m@@ -85,60 +71,6 @@[m
+ 	    <artifactId>spring-boot-starter-security</artifactId>[m
+ 	</dependency>[m
+ [m
+[31m-=======[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-data-jpa</artifactId>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-security</artifactId>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>mysql</groupId>[m
+[31m-			<artifactId>mysql-connector-java</artifactId>[m
+[31m-			<version>8.0.33</version>[m
+[31m-			<scope>runtime</scope>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>io.jsonwebtoken</groupId>[m
+[31m-			<artifactId>jjwt-api</artifactId>[m
+[31m-			<version>0.11.5</version>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>io.jsonwebtoken</groupId>[m
+[31m-			<artifactId>jjwt-impl</artifactId>[m
+[31m-			<version>0.11.5</version>[m
+[31m-			<scope>runtime</scope>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>io.jsonwebtoken</groupId>[m
+[31m-			<artifactId>jjwt-jackson</artifactId>[m
+[31m-			<version>0.11.5</version>[m
+[31m-			<scope>runtime</scope>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.security</groupId>[m
+[31m-			<artifactId>spring-security-test</artifactId>[m
+[31m-			<scope>test</scope>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>jakarta.servlet</groupId>[m
+[31m-			<artifactId>jakarta.servlet-api</artifactId>[m
+[31m-			<version>6.0.0</version>[m
+[31m-			<scope>provided</scope>[m
+[31m-    	</dependency>[m
+[31m-    	<dependency>[m
+[31m-			<groupId>org.slf4j</groupId>[m
+[31m-			<artifactId>slf4j-api</artifactId>[m
+[31m-			<version>2.0.9</version>[m
+[31m-    	</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>com.fasterxml.jackson.datatype</groupId>[m
+[31m-			<artifactId>jackson-datatype-hibernate5</artifactId>[m
+[31m-			<version>2.19.0</version>[m
+[31m-		</dependency>		[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+ 	</dependencies>[m
+ [m
+ 	<build>[m
+[36m@@ -150,4 +82,4 @@[m
+ 		</plugins>[m
+ 	</build>[m
+ [m
+[31m-</project>[m
+[32m+[m[32m</project>[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/config/JwtFilter.java b/src/main/java/com/expensetracker/config/JwtFilter.java[m
+[1mindex 7ea6baa..7b73a1e 100644[m
+[1m--- a/src/main/java/com/expensetracker/config/JwtFilter.java[m
+[1m+++ b/src/main/java/com/expensetracker/config/JwtFilter.java[m
+[36m@@ -1,61 +1,5 @@[m
+ package com.expensetracker.config;[m
+ [m
+[31m-import com.expensetracker.service.CustomUserDetailsService;[m
+[31m-import jakarta.servlet.FilterChain;[m
+[31m-import jakarta.servlet.ServletException;[m
+[31m-import jakarta.servlet.http.*;[m
+[31m-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;[m
+[31m-import org.springframework.security.core.context.SecurityContextHolder;[m
+[31m-import org.springframework.security.core.userdetails.*;[m
+[31m-import org.springframework.stereotype.Component;[m
+[31m-import org.springframework.web.filter.OncePerRequestFilter;[m
+[31m-[m
+[31m-import java.io.IOException;[m
+[31m-[m
+[31m-@Component[m
+[31m-public class JwtFilter extends OncePerRequestFilter {[m
+[31m-[m
+[31m-    private final JwtUtil jwtUtil;[m
+[31m-    private final CustomUserDetailsService userDetailsService;[m
+[31m-[m
+[31m-    public JwtFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService) {[m
+[31m-        this.jwtUtil = jwtUtil;[m
+[31m-        this.userDetailsService = userDetailsService;[m
+[31m-    }[m
+[31m-[m
+[31m-    @Override[m
+[31m-    protected void doFilterInternal(HttpServletRequest request,[m
+[31m-                                    HttpServletResponse response,[m
+[31m-                                    FilterChain filterChain) throws ServletException, IOException {[m
+[31m-        String authHeader = request.getHeader("Authorization");[m
+[31m-[m
+[31m-        String token = null;[m
+[31m-        String email = null;[m
+[31m-[m
+[31m-        // Extract Bearer token[m
+[31m-        if (authHeader != null && authHeader.startsWith("Bearer ")) {[m
+[31m-            token = authHeader.substring(7);[m
+[31m-            email = jwtUtil.extractEmail(token);[m
+[31m-        }[m
+[31m-[m
+[31m-        // Validate and set authentication context[m
+[31m-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {[m
+[31m-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);[m
+[31m-[m
+[31m-            if (jwtUtil.validateToken(token)) {[m
+[31m-                UsernamePasswordAuthenticationToken authToken =[m
+[31m-                        new UsernamePasswordAuthenticationToken([m
+[31m-                                userDetails, null, userDetails.getAuthorities());[m
+[31m-                SecurityContextHolder.getContext().setAuthentication(authToken);[m
+[31m-            }[m
+[31m-        }[m
+[31m-[m
+[31m-        filterChain.doFilter(request, response);[m
+[31m-    }[m
+[31m-}[m
+[31m-[m
+[31m-package com.expensetracker.config;[m
+[31m-[m
+ import com.expensetracker.service.CustomUserDetailsService;[m
+ import jakarta.servlet.FilterChain;[m
+ import jakarta.servlet.ServletException;[m
+[36m@@ -109,4 +53,4 @@[m [mpublic class JwtFilter extends OncePerRequestFilter {[m
+ [m
+         filterChain.doFilter(request, response);[m
+     }[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/config/JwtUtil.java b/src/main/java/com/expensetracker/config/JwtUtil.java[m
+[1mindex 55f3aa8..059bda2 100644[m
+[1m--- a/src/main/java/com/expensetracker/config/JwtUtil.java[m
+[1m+++ b/src/main/java/com/expensetracker/config/JwtUtil.java[m
+[36m@@ -1,13 +1,5 @@[m
+ package com.expensetracker.config;[m
+ [m
+[31m-<<<<<<< HEAD[m
+[31m-import io.jsonwebtoken.*;[m
+[31m-import io.jsonwebtoken.security.Keys;[m
+[31m-import org.springframework.stereotype.Component;[m
+[31m-[m
+[31m-import java.security.Key;[m
+[31m-import java.util.Date;[m
+[31m-=======[m
+ import io.jsonwebtoken.Claims;[m
+ import io.jsonwebtoken.Jwts;[m
+ import io.jsonwebtoken.SignatureAlgorithm;[m
+[36m@@ -24,37 +16,10 @@[m [mimport java.util.Date;[m
+ import java.util.HashMap;[m
+ import java.util.Map;[m
+ import java.util.function.Function;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+ [m
+ @Component[m
+ public class JwtUtil {[m
+ [m
+[31m-<<<<<<< HEAD[m
+[31m-    // At least 32 characters![m
+[31m-    private final Key key = Keys.hmacShaKeyFor("this_is_a_long_secure_secret_key_123".getBytes());[m
+[31m-[m
+[31m-    public String generateToken(String email) {[m
+[31m-        return Jwts.builder()[m
+[31m-                .setSubject(email)[m
+[31m-                .setIssuedAt(new Date())[m
+[31m-                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 day[m
+[31m-                .signWith(key, SignatureAlgorithm.HS256)[m
+[31m-                .compact();[m
+[31m-    }[m
+[31m-[m
+[31m-    public String extractEmail(String token) {[m
+[31m-        return Jwts.parserBuilder().setSigningKey(key).build()[m
+[31m-                .parseClaimsJws(token).getBody().getSubject();[m
+[31m-    }[m
+[31m-[m
+[31m-    public boolean validateToken(String token) {[m
+[31m-        try {[m
+[31m-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);[m
+[31m-            return true;[m
+[31m-        } catch (JwtException e) {[m
+[31m-            return false;[m
+[31m-        }[m
+[31m-=======[m
+     @Value("${jwt.secret}")[m
+     private String secret;[m
+ [m
+[36m@@ -115,6 +80,5 @@[m [mpublic class JwtUtil {[m
+     private SecretKey getSigningKey() {[m
+         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);[m
+         return Keys.hmacShaKeyFor(keyBytes);[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+     }[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/config/SecurityConfig.java b/src/main/java/com/expensetracker/config/SecurityConfig.java[m
+[1mindex 2f2ca96..a062c8d 100644[m
+[1m--- a/src/main/java/com/expensetracker/config/SecurityConfig.java[m
+[1m+++ b/src/main/java/com/expensetracker/config/SecurityConfig.java[m
+[36m@@ -1,50 +1,6 @@[m
+ package com.expensetracker.config;[m
+ [m
+ import com.expensetracker.service.CustomUserDetailsService;[m
+[31m-<<<<<<< HEAD[m
+[31m-import org.springframework.context.annotation.Bean;[m
+[31m-import org.springframework.context.annotation.Configuration;[m
+[31m-import org.springframework.security.authentication.*;[m
+[31m-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;[m
+[31m-import org.springframework.security.config.annotation.web.builders.HttpSecurity;[m
+[31m-import org.springframework.security.config.http.SessionCreationPolicy;[m
+[31m-import org.springframework.security.crypto.bcrypt.*;[m
+[31m-import org.springframework.security.crypto.password.PasswordEncoder;[m
+[31m-import org.springframework.security.web.SecurityFilterChain;[m
+[31m-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;[m
+[31m-import org.springframework.security.config.Customizer; // ✅ make sure this is imported[m
+[31m-[m
+[31m-@Configuration[m
+[31m-public class SecurityConfig {[m
+[31m-[m
+[31m-    private final CustomUserDetailsService userDetailsService;[m
+[31m-    private final JwtFilter jwtFilter;[m
+[31m-[m
+[31m-    public SecurityConfig(CustomUserDetailsService userDetailsService, JwtFilter jwtFilter) {[m
+[31m-        this.userDetailsService = userDetailsService;[m
+[31m-        this.jwtFilter = jwtFilter;[m
+[31m-    }[m
+[31m-[m
+[31m-    @Bean[m
+[31m-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {[m
+[31m-        http[m
+[31m-            .cors(Customizer.withDefaults()) // ✅ enable CORS[m
+[31m-            .csrf(csrf -> csrf.disable())[m
+[31m-            .authorizeHttpRequests(auth -> auth[m
+[31m-                .requestMatchers("/api/auth/**").permitAll()[m
+[31m-                .anyRequest().authenticated()[m
+[31m-            )[m
+[31m-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));[m
+[31m-[m
+[31m-        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);[m
+[31m-        return http.build();[m
+[31m-    }[m
+[31m-[m
+[31m-    @Bean[m
+[31m-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {[m
+[31m-        return config.getAuthenticationManager();[m
+[31m-    }[m
+[31m-=======[m
+ import org.springframework.beans.factory.annotation.Autowired;[m
+ import org.springframework.context.annotation.Bean;[m
+ import org.springframework.context.annotation.Configuration;[m
+[36m@@ -79,15 +35,11 @@[m [mpublic class SecurityConfig {[m
+ [m
+     @Autowired[m
+     private JwtFilter jwtFilter;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+ [m
+     @Bean[m
+     public PasswordEncoder passwordEncoder() {[m
+         return new BCryptPasswordEncoder();[m
+     }[m
+[31m-<<<<<<< HEAD[m
+[31m-}[m
+[31m-=======[m
+ [m
+     @Bean[m
+     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {[m
+[36m@@ -145,5 +97,4 @@[m [mpublic class SecurityConfig {[m
+         source.registerCorsConfiguration("/**", configuration);[m
+         return source;[m
+     }[m
+[31m-}[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/config/WebConfig.java b/src/main/java/com/expensetracker/config/WebConfig.java[m
+[1mindex 5988d54..1621cd2 100644[m
+[1m--- a/src/main/java/com/expensetracker/config/WebConfig.java[m
+[1m+++ b/src/main/java/com/expensetracker/config/WebConfig.java[m
+[36m@@ -1,25 +1,5 @@[m
+ package com.expensetracker.config;[m
+ [m
+[31m-<<<<<<< HEAD[m
+[31m-import org.springframework.context.annotation.Bean;[m
+[31m-import org.springframework.context.annotation.Configuration;[m
+[31m-import org.springframework.web.servlet.config.annotation.*;[m
+[31m-[m
+[31m-@Configuration[m
+[31m-public class WebConfig {[m
+[31m-    @Bean[m
+[31m-    public WebMvcConfigurer corsConfigurer() {[m
+[31m-        return new WebMvcConfigurer() {[m
+[31m-            @Override[m
+[31m-            public void addCorsMappings(CorsRegistry registry) {[m
+[31m-            	registry.addMapping("/**")[m
+[31m-	                .allowedOrigins("http://localhost:3000")[m
+[31m-	                .allowedMethods("*")[m
+[31m-	                .allowedHeaders("*")[m
+[31m-	                .allowCredentials(true);[m
+[31m-            }[m
+[31m-        };[m
+[31m-=======[m
+ import org.springframework.context.annotation.Configuration;[m
+ import org.springframework.web.servlet.config.annotation.CorsRegistry;[m
+ import org.springframework.web.servlet.config.annotation.EnableWebMvc;[m
+[36m@@ -27,17 +7,20 @@[m [mimport org.springframework.web.servlet.config.annotation.WebMvcConfigurer;[m
+ import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;[m
+ [m
+ @Configuration[m
+[31m-@EnableWebMvc[m
+[32m+[m[32m@EnableWebMvc // Keep this from the other version[m
+ public class WebConfig implements WebMvcConfigurer {[m
+ [m
+     @Override[m
+     public void addCorsMappings(CorsRegistry registry) {[m
+[31m-        registry.addMapping("/**");[m
+[32m+[m[32m        registry.addMapping("/**")[m
+[32m+[m[32m                .allowedOrigins("http://localhost:3000")[m
+[32m+[m[32m                .allowedMethods("*") // Use "*" for all methods or specific ones[m
+[32m+[m[32m                .allowedHeaders("*") // Use "*" for all headers or specific ones[m
+[32m+[m[32m                .allowCredentials(true);[m
+     }[m
+ [m
+[31m-    @Override[m
+[32m+[m[32m    @Override // Keep this from the other version[m
+     public void configurePathMatch(PathMatchConfigurer configurer) {[m
+         configurer.setUseTrailingSlashMatch(true);[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+     }[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/config/package-info.java b/src/main/java/com/expensetracker/config/package-info.java[m
+[1mindex f30aedc..ff771f2 100644[m
+[1m--- a/src/main/java/com/expensetracker/config/package-info.java[m
+[1m+++ b/src/main/java/com/expensetracker/config/package-info.java[m
+[36m@@ -1,5 +1 @@[m
+[31m-<<<<<<< HEAD[m
+[31m-package com.expensetracker.config;[m
+[31m-=======[m
+[31m-package com.expensetracker.config;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[32m+[m[32mpackage com.expensetracker.config;[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/controller/package-info.java b/src/main/java/com/expensetracker/controller/package-info.java[m
+[1mindex ef06866..bc101e4 100644[m
+[1m--- a/src/main/java/com/expensetracker/controller/package-info.java[m
+[1m+++ b/src/main/java/com/expensetracker/controller/package-info.java[m
+[36m@@ -1,5 +1 @@[m
+[31m-<<<<<<< HEAD[m
+[31m-package com.expensetracker.controller;[m
+[31m-=======[m
+[31m-package com.expensetracker.controller;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[32m+[m[32mpackage com.expensetracker.controller;[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/model/Expense.java b/src/main/java/com/expensetracker/model/Expense.java[m
+[1mindex d7f7174..99591c1 100644[m
+[1m--- a/src/main/java/com/expensetracker/model/Expense.java[m
+[1m+++ b/src/main/java/com/expensetracker/model/Expense.java[m
+[36m@@ -2,58 +2,39 @@[m [mpackage com.expensetracker.model;[m
+ [m
+ import jakarta.persistence.*;[m
+ import java.time.LocalDate;[m
+[31m-<<<<<<< HEAD[m
+[31m-import com.fasterxml.jackson.annotation.JsonIgnore;[m
+[31m-[m
+[32m+[m[32mimport com.fasterxml.jackson.annotation.JsonIgnore; // Import JsonIgnore[m
+ [m
+ @Entity[m
+[31m-@Table(name = "expenses")[m
+[32m+[m[32m@Table(name = "expenses") // Add table annotation for clarity[m
+ public class Expense {[m
+[31m-	[m
+[31m-=======[m
+ [m
+[31m-@Entity[m
+[31m-public class Expense {[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+     @Id[m
+     @GeneratedValue(strategy = GenerationType.IDENTITY)[m
+     private Long id;[m
+ [m
+[31m-<<<<<<< HEAD[m
+[31m-    private String name;  // ✅ changed from 'title' to 'name'[m
+[31m-[m
+[32m+[m[32m    private String description; // Use description as in the other version[m
+     private Double amount;[m
+[31m-[m
+     private LocalDate date;[m
+[32m+[m[32m    private String category; // Keep category field[m
+ [m
+[31m-    @ManyToOne[m
+[31m-    @JoinColumn(name = "user_id")  // Foreign key column in expenses table[m
+[31m-    @JsonIgnore  // ✅ This prevents recursion when serializing Expense -> User -> Expenses...[m
+[32m+[m[32m    @ManyToOne(fetch = FetchType.LAZY) // Keep lazy fetch[m
+[32m+[m[32m    @JoinColumn(name = "user_id")[m
+[32m+[m[32m    @JsonIgnore // Add JsonIgnore to prevent recursion[m
+     private User user;[m
+ [m
+[31m-[m
+[31m-    // Constructors[m
+[32m+[m[32m    // Constructors (add if needed, or rely on default)[m
+     public Expense() {}[m
+ [m
+[31m-    public Expense(Long id, String name, Double amount, LocalDate date, User user) {[m
+[32m+[m[32m    public Expense(Long id, String description, Double amount, LocalDate date, String category, User user) {[m
+         this.id = id;[m
+[31m-        this.name = name;[m
+[32m+[m[32m        this.description = description;[m
+         this.amount = amount;[m
+         this.date = date;[m
+[32m+[m[32m        this.category = category;[m
+         this.user = user;[m
+     }[m
+ [m
+     // Getters and Setters[m
+[31m-=======[m
+[31m-    private String description;[m
+[31m-    private Double amount;[m
+[31m-    private LocalDate date;[m
+[31m-[m
+[31m-    @ManyToOne(fetch = FetchType.LAZY)[m
+[31m-    @JoinColumn(name = "user_id")[m
+[31m-    private User user;[m
+[31m-[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+     public Long getId() {[m
+         return id;[m
+     }[m
+[36m@@ -62,21 +43,12 @@[m [mpublic class Expense {[m
+         this.id = id;[m
+     }[m
+ [m
+[31m-<<<<<<< HEAD[m
+[31m-    public String getName() {  // ✅ changed[m
+[31m-        return name;[m
+[31m-    }[m
+[31m-[m
+[31m-    public void setName(String name) {  // ✅ changed[m
+[31m-        this.name = name;[m
+[31m-=======[m
+     public String getDescription() {[m
+         return description;[m
+     }[m
+ [m
+     public void setDescription(String description) {[m
+         this.description = description;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+     }[m
+ [m
+     public Double getAmount() {[m
+[36m@@ -95,14 +67,6 @@[m [mpublic class Expense {[m
+         this.date = date;[m
+     }[m
+ [m
+[31m-    public User getUser() {[m
+[31m-        return user;[m
+[31m-    }[m
+[31m-[m
+[31m-    public void setUser(User user) {[m
+[31m-        this.user = user;[m
+[31m-    }[m
+[31m-[m
+     public String getCategory() {[m
+         return category;[m
+     }[m
+[36m@@ -110,4 +74,12 @@[m [mpublic class Expense {[m
+     public void setCategory(String category) {[m
+         this.category = category;[m
+     }[m
+[31m-}[m
+[32m+[m
+[32m+[m[32m    public User getUser() {[m
+[32m+[m[32m        return user;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void setUser(User user) {[m
+[32m+[m[32m        this.user = user;[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/payload/AuthRequest.java b/src/main/java/com/expensetracker/payload/AuthRequest.java[m
+[1mindex 9712c00..992d755 100644[m
+[1m--- a/src/main/java/com/expensetracker/payload/AuthRequest.java[m
+[1m+++ b/src/main/java/com/expensetracker/payload/AuthRequest.java[m
+[36m@@ -1,17 +1,6 @@[m
+ package com.expensetracker.payload;[m
+ [m
+ public class AuthRequest {[m
+[31m-<<<<<<< HEAD[m
+[31m-    private String email;[m
+[31m-    private String password;[m
+[31m-[m
+[31m-    // Getters and Setters[m
+[31m-    public String getEmail() { return email; }[m
+[31m-    public void setEmail(String email) { this.email = email; }[m
+[31m-[m
+[31m-    public String getPassword() { return password; }[m
+[31m-    public void setPassword(String password) { this.password = password; }[m
+[31m-=======[m
+     private String username;[m
+     private String password;[m
+ [m
+[36m@@ -30,5 +19,4 @@[m [mpublic class AuthRequest {[m
+     public void setPassword(String password) {[m
+         this.password = password;[m
+     }[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/payload/AuthResponse.java b/src/main/java/com/expensetracker/payload/AuthResponse.java[m
+[1mindex f8d7fa3..b8a0680 100644[m
+[1m--- a/src/main/java/com/expensetracker/payload/AuthResponse.java[m
+[1m+++ b/src/main/java/com/expensetracker/payload/AuthResponse.java[m
+[36m@@ -2,17 +2,11 @@[m [mpackage com.expensetracker.payload;[m
+ [m
+ public class AuthResponse {[m
+     private String token;[m
+[31m-<<<<<<< HEAD[m
+[31m-[m
+[31m-    public AuthResponse(String token) {[m
+[31m-        this.token = token;[m
+[31m-=======[m
+     private String message;[m
+ [m
+     public AuthResponse(String token, String message) {[m
+         this.token = token;[m
+         this.message = message;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+     }[m
+ [m
+     public String getToken() {[m
+[36m@@ -22,8 +16,6 @@[m [mpublic class AuthResponse {[m
+     public void setToken(String token) {[m
+         this.token = token;[m
+     }[m
+[31m-<<<<<<< HEAD[m
+[31m-=======[m
+ [m
+     public String getMessage() {[m
+         return message;[m
+[36m@@ -32,5 +24,4 @@[m [mpublic class AuthResponse {[m
+     public void setMessage(String message) {[m
+         this.message = message;[m
+     }[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[31m-}[m
+\ No newline at end of file[m
+[32m+[m[32m}[m
+[1mdiff --git a/src/main/java/com/expensetracker/payload/package-info.java b/src/main/java/com/expensetracker/payload/package-info.java[m
+[1mindex 341f366..01166bf 100644[m
+[1m--- a/src/main/java/com/expensetracker/payload/package-info.java[m
+[1m+++ b/src/main/java/com/expensetracker/payload/package-info.java[m
+[36m@@ -1,5 +1 @@[m
+[31m-<<<<<<< HEAD[m
+[31m-package com.expensetracker.payload;[m
+[31m-=======[m
+[31m-package com.expensetracker.payload;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[32m+[m[32mpackage com.expensetracker.payload;[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/repository/ExpenseRepository.java b/src/main/java/com/expensetracker/repository/ExpenseRepository.java[m
+[1mindex 6651bb9..9938531 100644[m
+[1m--- a/src/main/java/com/expensetracker/repository/ExpenseRepository.java[m
+[1m+++ b/src/main/java/com/expensetracker/repository/ExpenseRepository.java[m
+[36m@@ -6,14 +6,6 @@[m [mimport org.springframework.data.jpa.repository.JpaRepository;[m
+ import org.springframework.data.jpa.repository.Query;[m
+ import org.springframework.data.repository.query.Param;[m
+ [m
+[31m-<<<<<<< HEAD[m
+[31m-import com.expensetracker.model.User;[m
+[31m-import java.util.List;[m
+[31m-[m
+[31m-public interface ExpenseRepository extends JpaRepository<Expense, Long> {[m
+[31m-    List<Expense> findByUser(User user);[m
+[31m-}[m
+[31m-=======[m
+ import java.util.List;[m
+ [m
+ public interface ExpenseRepository extends JpaRepository<Expense, Long> {[m
+[36m@@ -21,5 +13,4 @@[m [mpublic interface ExpenseRepository extends JpaRepository<Expense, Long> {[m
+ [m
+     @Query("SELECT new com.expensetracker.payload.ExpenseSummaryDTO(e.category, SUM(e.amount)) FROM Expense e WHERE e.user.id = :userId AND MONTH(e.date) = :month AND YEAR(e.date) = :year GROUP BY e.category")[m
+     List<ExpenseSummaryDTO> findExpenseSummaryByCategory(@Param("userId") Long userId, @Param("month") int month, @Param("year") int year);[m
+[31m-}[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/repository/UserRepository.java b/src/main/java/com/expensetracker/repository/UserRepository.java[m
+[1mindex 9aeace3..a15f5e2 100644[m
+[1m--- a/src/main/java/com/expensetracker/repository/UserRepository.java[m
+[1m+++ b/src/main/java/com/expensetracker/repository/UserRepository.java[m
+[36m@@ -2,17 +2,11 @@[m [mpackage com.expensetracker.repository;[m
+ [m
+ import com.expensetracker.model.User;[m
+ import org.springframework.data.jpa.repository.JpaRepository;[m
+[31m-<<<<<<< HEAD[m
+[31m-[m
+[31m-public interface UserRepository extends JpaRepository<User, Long> {[m
+[31m-    User findByEmail(String email);[m
+[31m-=======[m
+[31m-import org.springframework.data.jpa.repository.Query;[m
+[31m-import org.springframework.data.repository.query.Param;[m
+[32m+[m[32mimport org.springframework.data.jpa.repository.Query; // Keep if needed for other queries, otherwise can remove[m
+[32m+[m[32mimport org.springframework.data.repository.query.Param; // Keep if needed for other queries, otherwise can remove[m
+ [m
+ import java.util.Optional;[m
+ [m
+ public interface UserRepository extends JpaRepository<User, Long> {[m
+     Optional<User> findByUsername(String username);[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/service/CustomUserDetailsService.java b/src/main/java/com/expensetracker/service/CustomUserDetailsService.java[m
+[1mindex ae401ad..feeee75 100644[m
+[1m--- a/src/main/java/com/expensetracker/service/CustomUserDetailsService.java[m
+[1m+++ b/src/main/java/com/expensetracker/service/CustomUserDetailsService.java[m
+[36m@@ -2,16 +2,12 @@[m [mpackage com.expensetracker.service;[m
+ [m
+ import com.expensetracker.model.User;[m
+ import com.expensetracker.repository.UserRepository;[m
+[31m-<<<<<<< HEAD[m
+[31m-import org.springframework.security.core.userdetails.*;[m
+[31m-=======[m
+ import org.springframework.beans.factory.annotation.Autowired;[m
+ import org.springframework.security.core.GrantedAuthority;[m
+ import org.springframework.security.core.authority.SimpleGrantedAuthority;[m
+ import org.springframework.security.core.userdetails.UserDetails;[m
+ import org.springframework.security.core.userdetails.UserDetailsService;[m
+ import org.springframework.security.core.userdetails.UsernameNotFoundException;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+ import org.springframework.stereotype.Service;[m
+ [m
+ import java.util.Collections;[m
+[36m@@ -19,26 +15,6 @@[m [mimport java.util.Collections;[m
+ @Service[m
+ public class CustomUserDetailsService implements UserDetailsService {[m
+ [m
+[31m-<<<<<<< HEAD[m
+[31m-    private final UserRepository userRepository;[m
+[31m-[m
+[31m-    public CustomUserDetailsService(UserRepository userRepository) {[m
+[31m-        this.userRepository = userRepository;[m
+[31m-    }[m
+[31m-[m
+[31m-    @Override[m
+[31m-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {[m
+[31m-        User user = userRepository.findByEmail(email);[m
+[31m-        if (user == null) {[m
+[31m-            throw new UsernameNotFoundException("User not found with email: " + email);[m
+[31m-        }[m
+[31m-[m
+[31m-        return new org.springframework.security.core.userdetails.User([m
+[31m-            user.getEmail(),[m
+[31m-            user.getPassword(), // this is already encoded in DB[m
+[31m-            Collections.emptyList()[m
+[31m-        );[m
+[31m-=======[m
+     @Autowired[m
+     private UserRepository userRepository;[m
+ [m
+[36m@@ -48,6 +24,5 @@[m [mpublic class CustomUserDetailsService implements UserDetailsService {[m
+                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));[m
+         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());[m
+         return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), Collections.singletonList(authority));[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+     }[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/service/ExpenseService.java b/src/main/java/com/expensetracker/service/ExpenseService.java[m
+[1mindex 63174ae..c4f903c 100644[m
+[1m--- a/src/main/java/com/expensetracker/service/ExpenseService.java[m
+[1m+++ b/src/main/java/com/expensetracker/service/ExpenseService.java[m
+[36m@@ -1,16 +1,6 @@[m
+ package com.expensetracker.service;[m
+ [m
+ import com.expensetracker.model.Expense;[m
+[31m-<<<<<<< HEAD[m
+[31m-import java.util.List;[m
+[31m-[m
+[31m-public interface ExpenseService {[m
+[31m-    Expense createExpense(Expense expense);[m
+[31m-    List<Expense> getAllExpenses();[m
+[31m-    Expense getExpenseById(Long id);[m
+[31m-    Expense updateExpense(Long id, Expense expense);[m
+[31m-    void deleteExpense(Long id);[m
+[31m-=======[m
+ [m
+ import java.util.List;[m
+ import java.util.Optional;[m
+[36m@@ -21,8 +11,7 @@[m [mpublic interface ExpenseService {[m
+     Expense getExpenseById(Long id, String username);[m
+     Expense updateExpense(Long id, Expense expense, String username);[m
+     void deleteExpense(Long id, String username);[m
+[31m-    Expense save(Expense expense);[m
+[31m-    Optional<Expense> findById(Long id);[m
+[31m-    List<Expense> getExpensesByUserId(Long userId);[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[31m-}[m
+[32m+[m[32m    Expense save(Expense expense); // This is used by the controller's update method[m
+[32m+[m[32m    Optional<Expense> findById(Long id); // This is used by the controller's update method[m
+[32m+[m[32m    List<Expense> getExpensesByUserId(Long userId); // For admin[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/service/ExpenseServiceImpl.java b/src/main/java/com/expensetracker/service/ExpenseServiceImpl.java[m
+[1mindex 074b325..00c5d81 100644[m
+[1m--- a/src/main/java/com/expensetracker/service/ExpenseServiceImpl.java[m
+[1m+++ b/src/main/java/com/expensetracker/service/ExpenseServiceImpl.java[m
+[36m@@ -5,20 +5,11 @@[m [mimport com.expensetracker.model.User;[m
+ import com.expensetracker.payload.ExpenseSummaryDTO;[m
+ import com.expensetracker.repository.ExpenseRepository;[m
+ import com.expensetracker.repository.UserRepository;[m
+[31m-<<<<<<< HEAD[m
+[31m-[m
+ import org.springframework.beans.factory.annotation.Autowired;[m
+[31m-import org.springframework.security.core.context.SecurityContextHolder;[m
+ import org.springframework.stereotype.Service;[m
+ [m
+ import java.util.List;[m
+ import java.util.Optional;[m
+[31m-=======[m
+[31m-import org.springframework.beans.factory.annotation.Autowired;[m
+[31m-import org.springframework.stereotype.Service;[m
+[31m-[m
+[31m-import java.util.List;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+ [m
+ @Service[m
+ public class ExpenseServiceImpl implements ExpenseService {[m
+[36m@@ -30,55 +21,13 @@[m [mpublic class ExpenseServiceImpl implements ExpenseService {[m
+     private UserRepository userRepository;[m
+ [m
+     @Override[m
+[31m-<<<<<<< HEAD[m
+[31m-    public Expense createExpense(Expense expense) {[m
+[31m-        // Get currently logged-in user's email from Spring Security[m
+[31m-        String email = SecurityContextHolder.getContext().getAuthentication().getName();[m
+[31m-        User user = userRepository.findByEmail(email);[m
+[31m-[m
+[31m-        // Attach the logged-in user to the expense[m
+[31m-        expense.setId(null); // Ensure new record[m
+[31m-        expense.setUser(user);[m
+[31m-[m
+[31m-=======[m
+     public Expense addExpense(Expense expense, String username) {[m
+         User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));[m
+         expense.setUser(user);[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+         return expenseRepository.save(expense);[m
+     }[m
+ [m
+     @Override[m
+[31m-<<<<<<< HEAD[m
+[31m-    public List<Expense> getAllExpenses() {[m
+[31m-        // Get expenses only for the logged-in user[m
+[31m-        String email = SecurityContextHolder.getContext().getAuthentication().getName();[m
+[31m-        User user = userRepository.findByEmail(email);[m
+[31m-        return expenseRepository.findByUser(user);[m
+[31m-    }[m
+[31m-[m
+[31m-    @Override[m
+[31m-    public Expense getExpenseById(Long id) {[m
+[31m-        return expenseRepository.findById(id).orElse(null);[m
+[31m-    }[m
+[31m-[m
+[31m-    @Override[m
+[31m-    public Expense updateExpense(Long id, Expense updatedExpense) {[m
+[31m-        Optional<Expense> existingExpense = expenseRepository.findById(id);[m
+[31m-        if (existingExpense.isPresent()) {[m
+[31m-            Expense expense = existingExpense.get();[m
+[31m-            expense.setName(updatedExpense.getName());[m
+[31m-            expense.setAmount(updatedExpense.getAmount());[m
+[31m-            expense.setDate(updatedExpense.getDate());[m
+[31m-            return expenseRepository.save(expense);[m
+[31m-        }[m
+[31m-        return null;[m
+[31m-    }[m
+[31m-[m
+[31m-    @Override[m
+[31m-    public void deleteExpense(Long id) {[m
+[31m-        expenseRepository.deleteById(id);[m
+[31m-=======[m
+     public List<Expense> getAllExpenses(String username) {[m
+         User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));[m
+         return expenseRepository.findByUserId(user.getId());[m
+[36m@@ -116,14 +65,23 @@[m [mpublic class ExpenseServiceImpl implements ExpenseService {[m
+         expenseRepository.delete(expense);[m
+     }[m
+ [m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public Expense save(Expense expense) { // This method is used by the controller's update method[m
+[32m+[m[32m        return expenseRepository.save(expense);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public Optional<Expense> findById(Long id) { // This method is used by the controller's update method[m
+[32m+[m[32m        return expenseRepository.findById(id);[m
+[32m+[m[32m    }[m
+[32m+[m
+     @Override[m
+     public List<Expense> getExpensesByUserId(Long userId) {[m
+         return expenseRepository.findByUserId(userId);[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+     }[m
+ [m
+     @Override[m
+     public List<ExpenseSummaryDTO> getExpenseSummaryByCategory(Long userId, int month, int year) {[m
+         return expenseRepository.findExpenseSummaryByCategory(userId, month, year);[m
+     }[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/expensetracker/service/package-info.java b/src/main/java/com/expensetracker/service/package-info.java[m
+[1mindex 9586bc6..7d48bdc 100644[m
+[1m--- a/src/main/java/com/expensetracker/service/package-info.java[m
+[1m+++ b/src/main/java/com/expensetracker/service/package-info.java[m
+[36m@@ -1,5 +1 @@[m
+[31m-<<<<<<< HEAD[m
+[31m-package com.expensetracker.service;[m
+[31m-=======[m
+[31m-package com.expensetracker.service;[m
+[31m->>>>>>> 8f43e3f (fix a behavior error when selectedUser on admin page)[m
+[32m+[m[32mpackage com.expensetracker.service;[m
+\ No newline at end of file[m
