@@ -1,22 +1,25 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import expenseService from "../services/expense.service";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import expenseService from '../services/expense.service';
 
 const UpdateExpense = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const [formData, setFormData] = useState({
+    description: '',
+    amount: '',
+    date: '',
+    category: 'Other'
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState("");
-  const [category, setCategory] = useState("Other");
+  const { description, amount, date, category } = formData;
 
   useEffect(() => {
     if (!id) {
-      setError("Missing expense id");
+      setError('Missing expense id');
       setLoading(false);
       return;
     }
@@ -27,42 +30,38 @@ const UpdateExpense = () => {
 
     expenseService
       .getExpenseById(id)
-      .then((res) => {
+      .then(res => {
         const data = res && res.data ? res.data : res;
-        console.log("Fetched expense data:", data);
         if (!mounted) return;
-        setDescription(data.description ?? "");
-        setAmount(data.amount ?? "");
 
-        const rawDate = data.date; // Prioritize data.date
-        let dateStr = "";
+        const rawDate = data.date;
+        let dateStr = '';
         if (rawDate) {
           try {
-            // Attempt to parse as a Date object
             const d = new Date(rawDate);
-            // Check if the date is valid and then format it to YYYY-MM-DD
-            if (!isNaN(d.getTime())) { // Check for valid date
+            if (!isNaN(d.getTime())) {
               dateStr = d.toISOString().split('T')[0];
             }
           } catch (e) {
-            console.error("Error parsing date:", rawDate, e);
-            // Fallback if parsing fails, try to slice if it's a string
-            if (typeof rawDate === "string" && rawDate.length >= 10) {
+            console.error('Error parsing date:', rawDate, e);
+            if (typeof rawDate === 'string' && rawDate.length >= 10) {
               dateStr = rawDate.slice(0, 10);
             }
           }
         }
-        setDate(dateStr);
-        setCategory(data.category ?? "Other");
+        setFormData({
+          description: data.description ?? '',
+          amount: data.amount ?? '',
+          date: dateStr,
+          category: data.category ?? 'Other'
+        });
       })
-      .catch((err) => {
-        console.error("Failed to load expense:", err);
-        // show HTTP response body if available
+      .catch(err => {
+        console.error('Failed to load expense:', err);
         if (err && err.response) {
-          console.error("response data:", err.response.data);
-          setError("Failed to load expense: " + (err.response.data?.message || JSON.stringify(err.response.data)));
+          setError('Failed to load expense: ' + (err.response.data?.message || JSON.stringify(err.response.data)));
         } else {
-          setError("Failed to load expense: " + (err.message || err));
+          setError('Failed to load expense: ' + (err.message || err));
         }
       })
       .finally(() => {
@@ -74,93 +73,109 @@ const UpdateExpense = () => {
     };
   }, [id]);
 
-  const handleSubmit = async (e) => {
+  const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      // normalize payload: amount should be a number, date as ISO yyyy-mm-dd
       const payload = {
-        description,
-        amount: amount === "" ? null : Number(amount),
-        date: date || null,
-        category,
+        ...formData,
+        amount: amount === '' ? null : Number(amount)
       };
-      console.log("Updating expense payload:", payload);
-      const res = await expenseService.updateExpense(id, payload);
-      console.log("Update response:", res);
-      navigate("/"); // Redirect to dashboard (root path) after update
+      await expenseService.updateExpense(id, payload);
+      navigate('/');
     } catch (err) {
-      console.error("Update failed:", err);
-      // surface server error details for debugging
+      console.error('Update failed:', err);
       if (err && err.response) {
-        console.error("server response data:", err.response.data);
-        setError(
-          "Update failed: " +
-          (err.response.data?.message ||
-            err.response.data?.error ||
-            JSON.stringify(err.response.data))
-        );
+        setError('Update failed: ' + (err.response.data?.message || err.response.data?.error || JSON.stringify(err.response.data)));
       } else {
-        setError("Update failed: " + (err.message || String(err)));
+        setError('Update failed: ' + (err.message || String(err)));
       }
+    } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div style={{ color: "red" }}>{error}</div>;
+  if (loading) {
+    return <div className="container mt-5 text-center">Loading...</div>;
+  }
 
   return (
-    <div className="card">
-      <div className="card-body">
-        <h2 className="card-title">Update Expense</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group mb-3">
-            <label>Description</label>
-            <input
-              type="text"
-              className="form-control"
-              name="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
+    <div className="container mt-5">
+      <div className="row justify-content-center">
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-body">
+              <h2 className="card-title text-center mb-4">Update Expense</h2>
+              {error && <div className="alert alert-danger">{error}</div>}
+              <form onSubmit={handleSubmit}>
+                <div className="form-group mb-3">
+                  <label>Description</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="description"
+                    value={description}
+                    onChange={onChange}
+                    required
+                  />
+                </div>
+                <div className="form-group mb-3">
+                  <label>Amount</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    name="amount"
+                    value={amount}
+                    onChange={onChange}
+                    required
+                  />
+                </div>
+                <div className="form-group mb-3">
+                  <label>Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    name="date"
+                    value={date}
+                    onChange={onChange}
+                    required
+                  />
+                </div>
+                <div className="form-group mb-3">
+                  <label>Category</label>
+                  <select
+                    className="form-control"
+                    name="category"
+                    value={category}
+                    onChange={onChange}
+                  >
+                    <option value="Food">Food</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="d-grid gap-2">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading && (
+                      <span className="spinner-border spinner-border-sm"></span>
+                    )}{' '}
+                    Update Expense
+                  </button>
+                  <Link to="/" className="btn btn-secondary">Back to Dashboard</Link>
+                </div>
+              </form>
+            </div>
           </div>
-          <div className="form-group mb-3">
-            <label>Amount</label>
-            <input
-              type="number"
-              className="form-control"
-              name="amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group mb-3">
-            <label>Date</label>
-            <input
-              type="date"
-              className="form-control"
-              name="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Category</label>
-            <select className="form-control" value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option>Food</option>
-              <option>Travel</option>
-              <option>Utilities</option>
-              <option>Entertainment</option>
-              <option>Other</option>
-            </select>
-          </div>
-          <button type="submit" className="btn btn-primary">Update Expense</button>
-        </form>
+        </div>
       </div>
     </div>
   );
