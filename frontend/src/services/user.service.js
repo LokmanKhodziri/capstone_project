@@ -1,19 +1,14 @@
 import axios from 'axios';
-import AuthService from './auth.service';
+import authHeader from './auth-header';
 
 const API_URL = '/api/user';
 
-const getAuthHeader = () => {
-    const user = AuthService.getCurrentUser();
-    return user && user.token ? { Authorization: `Bearer ${user.token}` } : {};
-};
-
 const getProfile = () => {
-    return axios.get(API_URL + '/profile', { headers: getAuthHeader() });
+    return axios.get(API_URL + '/profile', { headers: authHeader() });
 };
 
 const updateProfile = (userData) => {
-    return axios.put(API_URL + '/profile', userData, { headers: getAuthHeader() });
+    return axios.put(API_URL + '/profile', userData, { headers: authHeader() });
 };
 
 const UserService = {

@@ -15,6 +15,9 @@ public interface ExpenseService {
     Expense save(Expense expense); // This is used by the controller's update method
     Optional<Expense> findById(Long id); // This is used by the controller's update method
     
-    List<com.expensetracker.payload.ExpenseSummaryDTO> getExpenseSummaryByCategory(Long userId, int month, int year);
-    List<MonthlyExpenseSummaryDTO> getMonthlyExpenseSummary(Long userId, int year);
+    List<com.expensetracker.payload.ExpenseSummaryDTO> getExpenseSummaryByCategory(Long userId, int month, int year, boolean includeRecurring);
+    List<MonthlyExpenseSummaryDTO> getMonthlyExpenseSummary(Long userId, int year, String category, boolean includeRecurring);
+    List<com.expensetracker.payload.YearlyExpenseSummaryDTO> getYearlyExpenseSummary(Long userId, String category, boolean includeRecurring);
+    List<String> getDistinctCategories(Long userId);
+    List<com.expensetracker.model.Expense> getExpensesByUserId(Long userId);
 }

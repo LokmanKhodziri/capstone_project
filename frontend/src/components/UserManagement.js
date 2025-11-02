@@ -55,68 +55,81 @@ const UserManagement = () => {
     };
 
     return (
-        <div className="container mt-4">
-            <h2 className="h3 mb-4">User Management</h2>
+        <div className="container mt-4 user-management">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2 className="h3 mb-0">User Management</h2>
+                <div className="text-muted small">Total users: {users.length}</div>
+            </div>
 
-            <div className="row mb-4">
-                <div className="col-md-12">
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Search by username or email..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+            <div className="row mb-4 user-controls">
+                <div className="col-12">
+                    <div className="input-group user-search-wrapper">
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Search by username or email..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            aria-label="Search users"
+                        />
+                        <button
+                            className="btn btn-outline-secondary"
+                            type="button"
+                            onClick={() => setSearchQuery('')}
+                            aria-label="Clear search"
+                        >Clear</button>
+                    </div>
                 </div>
             </div>
 
             {error && <div className="alert alert-danger">{error}</div>}
 
-            <div className="row">
+            <div className="user-grid">
                 {loading ? (
                     <div className="col-12 text-center">Loading users...</div>
                 ) : filteredUsers.length > 0 ? (
                     filteredUsers.slice(0, visibleUsers).map((user) => (
-                        <div key={user.id} className="col-md-6 col-lg-4 mb-4">
-                            <div className="card h-100">
-                                <div className="card-body d-flex flex-column">
-                                    <div className="text-center">
-                                        <img
-                                            src={`https://ui-avatars.com/api/?name=${user.username}&background=random`}
-                                            alt="Profile"
-                                            className="img-fluid rounded-circle mb-3"
-                                            style={{ width: '100px', height: '100px' }}
-                                        />
-                                        <h5 className="card-title">{user.username}</h5>
-                                        <p className="card-text text-muted">{user.email}</p>
-                                        <p className="card-text"><span className={`badge ${user.role === 'ADMIN' ? 'bg-success' : 'bg-secondary'}`}>{user.role}</span></p>
-                                    </div>
-                                    <div className="mt-auto d-flex justify-content-center">
-                                        {user.username !== 'admin' && (
-                                            user.role === 'ADMIN' ? (
-                                                <button
-                                                    className="btn btn-danger"
-                                                    onClick={() => handleRevokeAdmin(user.id)}
-                                                >
-                                                    Revoke Admin
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    className="btn btn-primary"
-                                                    onClick={() => handleGrantAdmin(user.id)}
-                                                >
-                                                    Grant Admin
-                                                </button>
-                                            )
-                                        )}
-                                    </div>
+                        <div key={user.id} className="user-card p-3">
+                            <div className="d-flex flex-column h-100 align-items-center text-center">
+                                <img
+                                    src={`https://ui-avatars.com/api/?name=${user.username}&background=random`}
+                                    alt="Profile"
+                                    className="user-avatar mb-3"
+                                />
+                                <h5 className="mb-1">{user.username}</h5>
+                                <p className="mb-1 text-muted small">{user.email}</p>
+                                <div className="mb-3">
+                                    <span className={`user-role-badge ${user.role === 'ADMIN' ? 'admin' : 'user'}`}>{user.role}</span>
+                                </div>
+
+                                <div className="mt-auto user-actions d-flex w-100 justify-content-center">
+                                    {user.username !== 'admin' && (
+                                        user.role === 'ADMIN' ? (
+                                            <button
+                                                className="btn btn-outline-danger"
+                                                onClick={() => handleRevokeAdmin(user.id)}
+                                            >
+                                                Revoke Admin
+                                            </button>
+                                        ) : (
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={() => handleGrantAdmin(user.id)}
+                                            >
+                                                Grant Admin
+                                            </button>
+                                        )
+                                    )}
                                 </div>
                             </div>
                         </div>
                     ))
                 ) : (
                     <div className="col-12">
-                        <p className="text-center">No users found.</p>
+                        <div className="empty-state p-4 text-center">
+                            <h4>No users found.</h4>
+                            <p className="mb-0">Try clearing your filters or add new users.</p>
+                        </div>
                     </div>
                 )}
             </div>
