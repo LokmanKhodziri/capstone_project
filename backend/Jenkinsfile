@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'docker:latest'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         // Define the name for your Docker image
@@ -10,28 +15,40 @@ pipeline {
     }
 
     stages {
-        stage('Provision MySQL (CI)') {
-            steps {
-                script {
-                    // Ensure any old container is removed, then start a fresh mysql container
-                    sh "docker rm -f mysql-db || true"
-                    sh "docker run -d --name mysql-db -e MYSQL_ROOT_PASSWORD='${MYSQL_ROOT_PASSWORD}' -e MYSQL_DATABASE='${MYSQL_DB}' -p 3306:3306 mysql:8.0"
+                stage('Provision MySQL (CI)') {
+                        steps {
+                                script {
+                                        // Make MySQL provisioning safe: check Docker availability and avoid fixed container names
+                                        def mysqlContainer = "mysql-db-${env.BUILD_NUMBER ?: 'local'}"
+                                        try {
+                                                sh 'docker --version'
+                                        } catch (err) {
+                                                echo 'Docker not available on this agent — skipping MySQL provisioning.'
+                                                // Mark a flag so downstream steps know we didn't provision Docker
+                                                env.MYSQL_PROVISIONED = 'false'
+                                                return
+                                        }
 
-                    // Wait for MySQL to become ready by looking for the readiness text in logs
-                    sh '''
-                    echo 'Waiting for mysql-db to be ready...'
-                    for i in $(seq 1 30); do
-                      if docker logs mysql-db 2>&1 | grep -q "ready for connections"; then
-                        echo "mysql-db ready"
-                        break
-                      fi
-                      sleep 2
-                    done
-                    docker logs --tail=50 mysql-db || true
-                    '''
+                                        // Remove any leftover container with the same name, then start a fresh mysql container
+                                        sh "docker rm -f ${mysqlContainer} || true"
+                                        sh "docker run -d --name ${mysqlContainer} -e MYSQL_ROOT_PASSWORD='${MYSQL_ROOT_PASSWORD}' -e MYSQL_DATABASE='${MYSQL_DB}' mysql:8.0"
+                                        env.MYSQL_PROVISIONED = 'true'
+
+                                        // Wait for MySQL to become ready by looking for the readiness text in logs
+                                        sh """
+                                        echo 'Waiting for ${mysqlContainer} to be ready...'
+                                        for i in \\$(seq 1 30); do
+                                            if docker logs ${mysqlContainer} 2>&1 | grep -q "ready for connections"; then
+                                                echo "${mysqlContainer} ready"
+                                                break
+                                            fi
+                                            sleep 2
+                                        done
+                                        docker logs --tail=50 ${mysqlContainer} || true
+                                        """
+                                }
+                        }
                 }
-            }
-        }
 
         stage('Build & Test') {
             steps {
@@ -71,7 +88,12 @@ pipeline {
     post {
         always {
             // Clean up CI MySQL container if present
-            sh 'docker rm -f mysql-db || true'
+                    // Attempt to clean up the dynamically named mysql container (if provisioned)
+                    if (env.MYSQL_PROVISIONED == 'true') {
+                        sh "docker ps -a --filter \"name=mysql-db-\" --format '{{.Names}}' | xargs -r docker rm -f || true"
+                    } else {
+                        echo 'No CI MySQL container was provisioned on this agent.'
+                    }
         }
     }
 }
