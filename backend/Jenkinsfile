@@ -8,13 +8,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                // Jenkins automatically checks out the code when using 'Pipeline script from SCM'
-                // No explicit 'git' step is needed here.
-            }
-        }
-
         stage('Build & Test') {
             steps {
                 // Run tests and package the application using Maven
