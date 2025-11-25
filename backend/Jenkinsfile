@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        // Assumes you have a Maven installation named 'Maven 3.8.5' configured in Jenkins Global Tool Configuration
-        maven 'Maven 3.8.5' 
-    }
-
     environment {
         // Define the name for your Docker image
         DOCKER_IMAGE_NAME = "expense-tracker-backend"
@@ -15,8 +10,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Get the source code from your Git repository
-                git 'https://github.com/LokmanKhodziri/capstone_project.git'
+                // Jenkins automatically checks out the code when using 'Pipeline script from SCM'
+                // No explicit 'git' step is needed here.
             }
         }
 
