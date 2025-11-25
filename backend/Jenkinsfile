@@ -5,15 +5,41 @@ pipeline {
         // Define the name for your Docker image
         DOCKER_IMAGE_NAME = "expense-tracker-backend"
         DOCKER_IMAGE_TAG  = "latest"
+        MYSQL_ROOT_PASSWORD = 'Aabc@1234'
+        MYSQL_DB = 'expensetracker'
     }
 
     stages {
+        stage('Provision MySQL (CI)') {
+            steps {
+                script {
+                    // Ensure any old container is removed, then start a fresh mysql container
+                    sh "docker rm -f mysql-db || true"
+                    sh "docker run -d --name mysql-db -e MYSQL_ROOT_PASSWORD='${MYSQL_ROOT_PASSWORD}' -e MYSQL_DATABASE='${MYSQL_DB}' -p 3306:3306 mysql:8.0"
+
+                    // Wait for MySQL to become ready by looking for the readiness text in logs
+                    sh '''
+                    echo 'Waiting for mysql-db to be ready...'
+                    for i in $(seq 1 30); do
+                      if docker logs mysql-db 2>&1 | grep -q "ready for connections"; then
+                        echo "mysql-db ready"
+                        break
+                      fi
+                      sleep 2
+                    done
+                    docker logs --tail=50 mysql-db || true
+                    '''
+                }
+            }
+        }
+
         stage('Build & Test') {
             steps {
                 // Run tests and package the application using Maven from the backend directory
                 dir('backend') {
                     // Ensure the wrapper is executable (harmless if already set)
                     sh 'chmod +x mvnw || true'
+                    // Run package. Tests are configured to use H2 via src/test/resources/application.properties
                     sh './mvnw clean package'
                 }
             }
@@ -40,6 +66,12 @@ pipeline {
                 sh "docker rm ${DOCKER_IMAGE_NAME} || true"
                 sh "docker run -d --name ${DOCKER_IMAGE_NAME} -p 8080:8080 ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
             }
+        }
+    }
+    post {
+        always {
+            // Clean up CI MySQL container if present
+            sh 'docker rm -f mysql-db || true'
         }
     }
 }
