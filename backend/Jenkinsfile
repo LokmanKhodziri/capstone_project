@@ -16,7 +16,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Get the source code from your Git repository
-                git 'https://github.com/LokmanKhodziri/capstone_project'
+                git 'https://github.com/LokmanKhodziri/capstone_project.git'
             }
         }
 
