@@ -64,6 +64,18 @@ public class SecurityConfig {
                         "{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}"
                     );
                 })
+                // Access-denied handler: provide a clear JSON 403 response
+                // instead of allowing a security exception to bubble up as a 500.
+                // This makes behaviour in tests and clients deterministic: when a
+                // user is authenticated but lacks permission, they receive 403.
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    logger.error("Access denied: {}", accessDeniedException.getMessage());
+                    response.setContentType("application/json");
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write(
+                        "{\"error\": \"Access Denied\", \"message\": \"" + accessDeniedException.getMessage() + "\"}"
+                    );
+                })
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

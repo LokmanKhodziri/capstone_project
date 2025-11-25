@@ -1,12 +1,12 @@
 package com.expensetracker.payload;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class ExpenseDTO {
 
     private String description;
-    private BigDecimal amount;
+    // Use Double to match the Expense entity's amount type
+    private Double amount;
     private LocalDate date;
     private String category;
 
@@ -20,11 +20,11 @@ public class ExpenseDTO {
         this.description = description;
     }
 
-    public BigDecimal getAmount() {
+    public Double getAmount() {
         return amount;
     }
 
-    public void setAmount(BigDecimal amount) {
+    public void setAmount(Double amount) {
         this.amount = amount;
     }
 

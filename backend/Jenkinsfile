@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    tools {
+        // Assumes you have a Maven installation named 'Maven 3.8.5' configured in Jenkins Global Tool Configuration
+        maven 'Maven 3.8.5' 
+    }
+
+    environment {
+        // Define the name for your Docker image
+        DOCKER_IMAGE_NAME = "expense-tracker-backend"
+        DOCKER_IMAGE_TAG  = "latest"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Get the source code from your Git repository
+                git 'https://github.com/LokmanKhodziri/capstone_project'
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                // Run tests and package the application using Maven
+                sh './mvnw clean package'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image using the Dockerfile in the current directory
+                    def dockerImage = docker.build("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}", ".")
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // This is a simple deployment example. 
+                // It stops any running container with the same name and starts a new one.
+                // For production, you'd use tools like Docker Compose, Kubernetes, or a script to deploy to a remote server.
+                sh "docker stop ${DOCKER_IMAGE_NAME} || true"
+                sh "docker rm ${DOCKER_IMAGE_NAME} || true"
+                sh "docker run -d --name ${DOCKER_IMAGE_NAME} -p 8080:8080 ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+            }
+        }
+    }
+}

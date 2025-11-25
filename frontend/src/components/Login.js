@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import AuthService from "../services/auth.service";
+import { FaSignInAlt, FaUser, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const Login = () => {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("danger");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { username, password } = formData;
 
@@ -57,65 +59,90 @@ const Login = () => {
   };
 
   return (
-    <div className="container mt-5">
-      <div className="row justify-content-center">
-        <div className="col-md-6">
-          <div className="card">
-            <div className="card-body">
-              <h2 className="card-title text-center mb-4">Login</h2>
-              <form onSubmit={onSubmit}>
-                <div className="form-group mb-3">
-                  <label>Username</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    name="username"
-                    value={username}
-                    onChange={onChange}
-                    required
-                  />
-                </div>
-                <div className="form-group mb-3">
-                  <label>Password</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    name="password"
-                    value={password}
-                    onChange={onChange}
-                    minLength="6"
-                    required
-                  />
-                </div>
-                <div className="d-grid">
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={loading}
-                  >
-                    {loading && (
-                      <span className="spinner-border spinner-border-sm"></span>
-                    )}{" "}
-                    Login
-                  </button>
-                </div>
-                {message && (
-                  <div className="form-group mt-3">
-                    <div
-                      className={`alert alert-${messageType}`}
-                      role="alert"
-                    >
-                      {message}
-                    </div>
-                  </div>
-                )}
-              </form>
-              <div className="text-center mt-3">
-                <p>
-                  Don't have an account? <Link to="/register">Register</Link>
-                </p>
+    <div className="auth-container">
+      <div className="auth-wrapper">
+        <div className="auth-card">
+          <div className="auth-header">
+            <div className="auth-icon">
+              <FaSignInAlt />
+            </div>
+            <h2 className="auth-title">Welcome Back</h2>
+            <p className="auth-subtitle">Sign in to your account</p>
+          </div>
+
+          <form onSubmit={onSubmit} className="auth-form">
+            <div className="form-group">
+              <label className="form-label">
+                <FaUser className="me-2" />
+                Username
+              </label>
+              <input
+                type="text"
+                className="form-control auth-input"
+                name="username"
+                value={username}
+                onChange={onChange}
+                placeholder="Enter your username"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                <FaLock className="me-2" />
+                Password
+              </label>
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="form-control auth-input"
+                  name="password"
+                  value={password}
+                  onChange={onChange}
+                  placeholder="Enter your password"
+                  minLength="6"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
               </div>
             </div>
+
+            <button type="submit" className="btn auth-btn" disabled={loading}>
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2"></span>
+                  Signing In...
+                </>
+              ) : (
+                <>
+                  <FaSignInAlt className="me-2" />
+                  Sign In
+                </>
+              )}
+            </button>
+
+            {message && (
+              <div
+                className={`alert auth-alert alert-${messageType}`}
+                role="alert">
+                {message}
+              </div>
+            )}
+          </form>
+
+          <div className="auth-footer">
+            <p className="auth-link-text">
+              Don't have an account?
+              <Link to="/register" className="auth-link">
+                {" "}
+                Create one here
+              </Link>
+            </p>
           </div>
         </div>
       </div>

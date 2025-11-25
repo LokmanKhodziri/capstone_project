@@ -15,6 +15,9 @@ import Dashboard from './components/Dashboard';
 
 import AuthService from './services/auth.service';
 
+import RecurringExpenseList from './components/RecurringExpenseList';
+import YearlyReport from './components/YearlyReport';
+
 function App() {
   const [currentUser, setCurrentUser] = useState(undefined);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -62,11 +65,23 @@ function App() {
             <div className="collapse navbar-collapse" id="navbarNav">
               <ul className="navbar-nav me-auto mb-2 mb-lg-0">
                 {currentUser && (
-                  <li className="nav-item">
-                    <Link to={"/expenses"} className="nav-link">
-                      Expenses
-                    </Link>
-                  </li>
+                  <>
+                    <li className="nav-item">
+                      <Link to={"/expenses"} className="nav-link">
+                        Expenses
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link to={"/yearly-report"} className="nav-link">
+                        Yearly Report
+                      </Link>
+                    </li>
+                    <li className="nav-item">
+                      <Link to={"/recurring"} className="nav-link">
+                        Recurring
+                      </Link>
+                    </li>
+                  </>
                 )}
                 {isAdmin && (
                   <li className="nav-item">
@@ -121,9 +136,11 @@ function App() {
             <Route element={<PrivateRoute />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/expenses" element={<ExpenseList />} />
+              <Route path="/yearly-report" element={<YearlyReport />} />
               <Route path="/add" element={<AddExpense />} />
               <Route path="/update/:id" element={<UpdateExpense />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/recurring" element={<RecurringExpenseList />} />
             </Route>
 
             <Route element={<AdminPrivateRoute />}>

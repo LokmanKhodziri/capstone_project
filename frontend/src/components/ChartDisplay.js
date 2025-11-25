@@ -75,26 +75,121 @@ const ChartDisplay = ({ expenseSummaryData, monthlyExpenseData, user, totalSpend
     }
   };
 
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+    setIsDropdownOpen(false);
+  };
+
   return (
     <div className="card h-100">
       <div className="card-header">
-        <ul className="nav nav-pills card-header-pills">
+        {/* Dropdown for mobile view */}
+        <div className="d-sm-none">
+          <div className="dropdown">
+            <button
+              className="btn btn-secondary dropdown-toggle w-100"
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} View
+            </button>
+            <div className={`dropdown-menu w-100 ${isDropdownOpen ? 'show' : ''}`}>
+              <button
+                className={`dropdown-item ${activeTab === 'category' ? 'active' : ''}`}
+                onClick={() => handleTabClick('category')}
+              >
+                Category Spending
+              </button>
+              <button
+                className={`dropdown-item ${activeTab === 'income' ? 'active' : ''}`}
+                onClick={() => handleTabClick('income')}
+              >
+                Income vs. Spending
+              </button>
+              <button
+                className={`dropdown-item ${activeTab === 'monthly' ? 'active' : ''}`}
+                onClick={() => handleTabClick('monthly')}
+              >
+                Monthly Trend
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab view for desktop */}
+        <ul className="nav nav-pills card-header-pills d-none d-sm-flex">
           <li className="nav-item">
-            <button className={`nav-link ${activeTab === 'category' ? 'active' : ''}`} onClick={() => setActiveTab('category')}>Category Spending</button>
+            <button
+              className={`nav-link ${activeTab === 'category' ? 'active' : ''}`}
+              onClick={() => setActiveTab('category')}
+            >
+              Category Spending
+            </button>
           </li>
           <li className="nav-item">
-            <button className={`nav-link ${activeTab === 'income' ? 'active' : ''}`} onClick={() => setActiveTab('income')}>Income vs. Spending</button>
+            <button
+              className={`nav-link ${activeTab === 'income' ? 'active' : ''}`}
+              onClick={() => setActiveTab('income')}
+            >
+              Income vs. Spending
+            </button>
           </li>
           <li className="nav-item">
-            <button className={`nav-link ${activeTab === 'monthly' ? 'active' : ''}`} onClick={() => setActiveTab('monthly')}>Monthly Trend</button>
+            <button
+              className={`nav-link ${activeTab === 'monthly' ? 'active' : ''}`}
+              onClick={() => setActiveTab('monthly')}
+            >
+              Monthly Trend
+            </button>
           </li>
         </ul>
       </div>
-      <div className="card-.body">
+      <div className="card-body">
         <div style={{ height: '400px' }}>
-          {activeTab === 'category' && (expenseSummaryData.length > 0 ? <Pie data={pieChartData} options={{...chartOptions, plugins: {...chartOptions.plugins, title: {...chartOptions.plugins.title, text: 'Spending by Category'}}}} /> : <p className="text-center">No category data for this month.</p>)}
-          {activeTab === 'income' && <Pie data={incomeVsSpendingPieChartData} options={{...chartOptions, plugins: {...chartOptions.plugins, title: {...chartOptions.plugins.title, text: 'Income vs. Spending'}}}} />}
-          {activeTab === 'monthly' && (monthlyExpenseData.length > 0 ? <Bar data={monthlyBarChartData} options={{...chartOptions, plugins: {...chartOptions.plugins, title: {...chartOptions.plugins.title, text: 'Monthly Expense Trend'}}}} /> : <p className="text-center">Not enough data for monthly trend.</p>)}
+          {activeTab === 'category' &&
+            (expenseSummaryData.length > 0 ? (
+              <Pie
+                data={pieChartData}
+                options={{
+                  ...chartOptions,
+                  plugins: {
+                    ...chartOptions.plugins,
+                    title: { ...chartOptions.plugins.title, text: 'Spending by Category' },
+                  },
+                }}
+              />
+            ) : (
+              <p className="text-center">No category data for this month.</p>
+            ))}
+          {activeTab === 'income' && (
+            <Pie
+              data={incomeVsSpendingPieChartData}
+              options={{
+                ...chartOptions,
+                plugins: {
+                  ...chartOptions.plugins,
+                  title: { ...chartOptions.plugins.title, text: 'Income vs. Spending' },
+                },
+              }}
+            />
+          )}
+          {activeTab === 'monthly' &&
+            (monthlyExpenseData.length > 0 ? (
+              <Bar
+                data={monthlyBarChartData}
+                options={{
+                  ...chartOptions,
+                  plugins: {
+                    ...chartOptions.plugins,
+                    title: { ...chartOptions.plugins.title, text: 'Monthly Expense Trend' },
+                  },
+                }}
+              />
+            ) : (
+              <p className="text-center">Not enough data for monthly trend.</p>
+            ))}
         </div>
       </div>
     </div>
