@@ -1,29 +1,64 @@
 pipeline {
-    agent any
-
-    tools {
-        // Assumes you have a Maven installation named 'Maven 3.8.5' configured in Jenkins Global Tool Configuration
-        maven 'Maven 3.8.5' 
+    agent {
+        docker {
+            image 'docker:latest'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
 
     environment {
         // Define the name for your Docker image
         DOCKER_IMAGE_NAME = "expense-tracker-backend"
         DOCKER_IMAGE_TAG  = "latest"
+        MYSQL_ROOT_PASSWORD = 'Aabc@1234'
+        MYSQL_DB = 'expensetracker'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                // Get the source code from your Git repository
-                git 'https://github.com/LokmanKhodziri/capstone_project'
-            }
-        }
+                stage('Provision MySQL (CI)') {
+                        steps {
+                                script {
+                                        // Make MySQL provisioning safe: check Docker availability and avoid fixed container names
+                                        def mysqlContainer = "mysql-db-${env.BUILD_NUMBER ?: 'local'}"
+                                        try {
+                                                sh 'docker --version'
+                                        } catch (err) {
+                                                echo 'Docker not available on this agent — skipping MySQL provisioning.'
+                                                // Mark a flag so downstream steps know we didn't provision Docker
+                                                env.MYSQL_PROVISIONED = 'false'
+                                                return
+                                        }
+
+                                        // Remove any leftover container with the same name, then start a fresh mysql container
+                                        sh "docker rm -f ${mysqlContainer} || true"
+                                        sh "docker run -d --name ${mysqlContainer} -e MYSQL_ROOT_PASSWORD='${MYSQL_ROOT_PASSWORD}' -e MYSQL_DATABASE='${MYSQL_DB}' mysql:8.0"
+                                        env.MYSQL_PROVISIONED = 'true'
+
+                                        // Wait for MySQL to become ready by looking for the readiness text in logs
+                                        sh """
+                                        echo 'Waiting for ${mysqlContainer} to be ready...'
+                                        for i in \\$(seq 1 30); do
+                                            if docker logs ${mysqlContainer} 2>&1 | grep -q "ready for connections"; then
+                                                echo "${mysqlContainer} ready"
+                                                break
+                                            fi
+                                            sleep 2
+                                        done
+                                        docker logs --tail=50 ${mysqlContainer} || true
+                                        """
+                                }
+                        }
+                }
 
         stage('Build & Test') {
             steps {
-                // Run tests and package the application using Maven
-                sh './mvnw clean package'
+                // Run tests and package the application using Maven from the backend directory
+                dir('backend') {
+                    // Ensure the wrapper is executable (harmless if already set)
+                    sh 'chmod +x mvnw || true'
+                    // Run package. Tests are configured to use H2 via src/test/resources/application.properties
+                    sh './mvnw clean package'
+                }
             }
         }
 
@@ -31,7 +66,10 @@ pipeline {
             steps {
                 script {
                     // Build the Docker image using the Dockerfile in the current directory
-                    def dockerImage = docker.build("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}", ".")
+                    // Build using the backend directory as context so Dockerfile and jar are available
+                    dir('backend') {
+                        def dockerImage = docker.build("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}", ".")
+                    }
                 }
             }
         }
@@ -45,6 +83,17 @@ pipeline {
                 sh "docker rm ${DOCKER_IMAGE_NAME} || true"
                 sh "docker run -d --name ${DOCKER_IMAGE_NAME} -p 8080:8080 ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
             }
+        }
+    }
+    post {
+        always {
+            // Clean up CI MySQL container if present
+                    // Attempt to clean up the dynamically named mysql container (if provisioned)
+                    if (env.MYSQL_PROVISIONED == 'true') {
+                        sh "docker ps -a --filter \"name=mysql-db-\" --format '{{.Names}}' | xargs -r docker rm -f || true"
+                    } else {
+                        echo 'No CI MySQL container was provisioned on this agent.'
+                    }
         }
     }
 }
